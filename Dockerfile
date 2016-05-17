@@ -47,7 +47,16 @@ RUN apt-get update -qq \
 		elasticsearch=${ES_VERSION} \
 		openjdk-7-jdk \
  && apt-get clean
+ 
+### install Elasticsearch plougins
 
+FROM sebp/elk
+
+ENV ES_HOME /usr/share/elasticsearch
+WORKDIR ${ES_HOME}
+
+RUN gosu elasticsearch bin/plugin install cloud-aws
+RUN gosu elasticsearch bin/plugin install royrusso/elasticsearch-HQ
 
 ### install Logstash
 
