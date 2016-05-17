@@ -50,8 +50,6 @@ RUN apt-get update -qq \
  
 ### install Elasticsearch plougins
 
-FROM sebp/elk
-
 ENV ES_HOME /usr/share/elasticsearch
 WORKDIR ${ES_HOME}
 
