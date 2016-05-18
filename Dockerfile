@@ -48,9 +48,11 @@ RUN apt-get update -qq \
 		openjdk-7-jdk \
  && apt-get clean
  
-### install Elasticsearch plougins
+### install Elasticsearch plugins
 
 ENV ES_HOME /usr/share/elasticsearch
+ENV ES_DATA /esdata
+ENV ES_LOGS /eslogs
 WORKDIR ${ES_HOME}
 
 RUN gosu elasticsearch bin/plugin install cloud-aws
@@ -60,6 +62,7 @@ RUN gosu elasticsearch bin/plugin install royrusso/elasticsearch-HQ
 
 ENV LOGSTASH_VERSION 2.3.2
 ENV LOGSTASH_HOME /opt/logstash
+ENV LOGSTASH_LOGS /lslogs
 ENV LOGSTASH_PACKAGE logstash-${LOGSTASH_VERSION}.tar.gz
 
 RUN mkdir ${LOGSTASH_HOME} \
@@ -68,11 +71,12 @@ RUN mkdir ${LOGSTASH_HOME} \
  && rm -f ${LOGSTASH_PACKAGE} \
  && groupadd -r logstash \
  && useradd -r -s /usr/sbin/nologin -d ${LOGSTASH_HOME} -c "Logstash service user" -g logstash logstash \
- && mkdir -p /var/log/logstash /etc/logstash/conf.d \
- && chown -R logstash:logstash ${LOGSTASH_HOME} /var/log/logstash
+ && mkdir -p /var/log/logstash /etc/logstash/conf.d /lslogs \
+ && chown -R logstash:logstash ${LOGSTASH_HOME} /var/log/logstash ${LOGSTASH_LOGS}
 
 ADD ./logstash-init /etc/init.d/logstash
 RUN sed -i -e 's#^LS_HOME=$#LS_HOME='$LOGSTASH_HOME'#' /etc/init.d/logstash \
+ && sed -i -e 's#^LS_LOG_DIR=$#LS_LOG_DIR='$LOGSTASH_LOGS'#' /etc/init.d/logstash \
  && chmod +x /etc/init.d/logstash
 
 
@@ -133,7 +137,9 @@ ADD ./logstash-logrotate /etc/logrotate.d/logstash
 ADD ./kibana-logrotate /etc/logrotate.d/kibana
 RUN chmod 644 /etc/logrotate.d/elasticsearch \
  && chmod 644 /etc/logrotate.d/logstash \
- && chmod 644 /etc/logrotate.d/kibana
+ && chmod 644 /etc/logrotate.d/kibana \
+ && chmod 644 /esdata \
+ && chmod 644 /eslogs
 
 
 ###############################################################################
@@ -145,5 +151,8 @@ RUN chmod +x /usr/local/bin/start.sh
 
 EXPOSE 5601 9200 9300 5000 5044
 VOLUME /var/lib/elasticsearch
+VOLUME /lslogs
+VOLUME /esdata
+VOLUME /eslogs
 
 CMD [ "/usr/local/bin/start.sh" ]
